@@ -1,13 +1,14 @@
 package com.the9grounds.wirelesslogistics
 
-import com.the9grounds.wirelesslogistics.block.ModBlocks
+import com.the9grounds.wirelesslogistics.integration.Integration
+import com.the9grounds.wirelesslogistics.registries.BlockEntities
+import com.the9grounds.wirelesslogistics.registries.Blocks
+import com.the9grounds.wirelesslogistics.registries.Items
 import net.minecraft.client.Minecraft
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent
 import org.apache.logging.log4j.Level
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
 import thedarkcolour.kotlinforforge.forge.MOD_BUS
 import thedarkcolour.kotlinforforge.forge.runForDist
 
@@ -22,14 +23,13 @@ import thedarkcolour.kotlinforforge.forge.runForDist
 object WirelessLogistics {
     const val ID = "wirelesslogistics"
 
-    // the logger for our mod
-    val LOGGER: Logger = LogManager.getLogger(ID)
-
     init {
-        LOGGER.log(Level.INFO, "Hello world!")
-
-        // Register the KDeferredRegister to the mod-specific event bus
-        ModBlocks.REGISTRY.register(MOD_BUS)
+        Items.REGISTRY.register(MOD_BUS)
+        Blocks.REGISTRY.register(MOD_BUS)
+        BlockEntities.REGISTRY.register(MOD_BUS)
+        Items.init()
+        Blocks.init()
+        BlockEntities.init()
 
         val obj = runForDist(
             clientTarget = {
@@ -42,6 +42,7 @@ object WirelessLogistics {
             })
 
         println(obj)
+        Integration.init()
     }
 
     /**
@@ -50,13 +51,13 @@ object WirelessLogistics {
      * Fired on the mod specific event bus.
      */
     private fun onClientSetup(event: FMLClientSetupEvent) {
-        LOGGER.log(Level.INFO, "Initializing client...")
+        Logger.log(Level.INFO, "Initializing client...")
     }
 
     /**
      * Fired on the global Forge bus.
      */
     private fun onServerSetup(event: FMLDedicatedServerSetupEvent) {
-        LOGGER.log(Level.INFO, "Server starting...")
+        Logger.log(Level.INFO, "Server starting...")
     }
 }

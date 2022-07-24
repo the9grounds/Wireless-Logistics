@@ -26,9 +26,15 @@ val minecraftVersion: String by project
 val mcpChannel: String by project
 val mcpMappings: String by project
 
+// Dependencies
+val jeiVersion: String by project
+val mekanismVersion: String by project
+val aeVersion: String by project
+val rsVersion: String by project
+val cctVersion: String by project
+
 plugins {
-    val kotlinVersion: String by project
-    kotlin("jvm") version kotlinVersion
+    kotlin("jvm") version "1.6.21"
     java
 }
 apply {
@@ -38,7 +44,7 @@ apply {
 
 apply(from = "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/site/thedarkcolour/kotlinforforge/gradle/kff-3.1.0.gradle")
 
-project.group = "com.the9grounds.aeadditions"
+project.group = "com.the9grounds.wirelesslogistics"
 base.archivesBaseName = "WirelessLogistics-${minecraftVersion}"
 
 configure<UserDevExtension> {
@@ -78,9 +84,62 @@ configure<UserDevExtension> {
     }
 }
 
+repositories {
+    jcenter()
+    mavenCentral()
+
+    maven {
+        name = "Modmaven"
+        url = uri("https://modmaven.dev/")
+    }
+
+    maven {
+        url = uri("https://www.cursemaven.com")
+        content {
+            includeGroup("curse.maven")
+        }
+    }
+    maven {
+        url = uri("https://maven.pkg.github.com/refinedmods/refinedstorage")
+        /* As of december 2021, GitHub packages requires authentication.
+           The password below is a personal access token that has read access to the Refined Mods repos.
+           It can be reused in other projects.
+           See: https://github.community/t/download-from-github-package-registry-without-authentication/14407/38 and
+                https://github.community/t/download-from-github-package-registry-without-authentication/14407/44
+         */
+        credentials {
+            username = "anything"
+            password = "\u0067hp_oGjcDFCn8jeTzIj4Ke9pLoEVtpnZMP4VQgaX"
+        }
+    }
+    maven {
+        url = uri("https://squiddev.cc/maven/")
+        content {
+            includeGroup("org.squiddev")
+        }
+    }
+}
+
 dependencies {
     // Use the latest version of Minecraft Forge
-    "minecraft"("net.minecraftforge:forge:1.18.2-40.0.4")
+    "minecraft"("net.minecraftforge:forge:1.18.2-40.1.68")
+
+    val jeiApi = project.dependencies.create(group = "mezz.jei", name = "jei-${minecraftVersion}", version = jeiVersion, classifier = "api")
+    val jei = project.dependencies.create(group = "mezz.jei", name = "jei-${minecraftVersion}", version = jeiVersion)
+    val ae2 = project.dependencies.create(group = "appeng", name = "appliedenergistics2", version = aeVersion)
+    val rs = project.dependencies.create(group = "com.refinedmods", name = "refinedstorage", version = rsVersion)
+    
+    rs.isTransitive = false
+
+    compileOnly(project.the<DependencyManagementExtension>().deobf(jeiApi))
+    runtimeOnly(project.the<DependencyManagementExtension>().deobf(jei))
+
+    implementation(project.the<DependencyManagementExtension>().deobf(ae2))
+
+    implementation(project.the<DependencyManagementExtension>().deobf("mekanism:Mekanism:${mekanismVersion}"))
+    implementation(project.the<DependencyManagementExtension>().deobf("curse.maven:the-one-probe-245211:3671753"))
+    implementation(project.the<DependencyManagementExtension>().deobf(rs)) 
+    implementation(project.the<DependencyManagementExtension>().deobf("org.squiddev:cc-tweaked-${minecraftVersion}:${cctVersion}"))
 }
 
 val Project.minecraft: UserDevExtension
@@ -142,7 +201,7 @@ fun getBetterVersion(): String {
         return "${tag}"
     }
 
-    return buildNumber
+    return "${minecraftVersion}-${buildNumber}"
 }
 
 fun getReleaseType(): String {
