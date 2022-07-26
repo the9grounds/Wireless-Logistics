@@ -1,10 +1,13 @@
 package com.the9grounds.wirelesslogistics
 
+import com.the9grounds.wirelesslogistics.debug.CommandRegistry
 import com.the9grounds.wirelesslogistics.integration.Integration
 import com.the9grounds.wirelesslogistics.registries.BlockEntities
 import com.the9grounds.wirelesslogistics.registries.Blocks
 import com.the9grounds.wirelesslogistics.registries.Items
 import net.minecraft.client.Minecraft
+import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.event.server.ServerStartingEvent
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent
@@ -30,6 +33,8 @@ object WirelessLogistics {
         Items.init()
         Blocks.init()
         BlockEntities.init()
+
+        MinecraftForge.EVENT_BUS.addListener(::serverStarting)
 
         val obj = runForDist(
             clientTarget = {
@@ -59,5 +64,9 @@ object WirelessLogistics {
      */
     private fun onServerSetup(event: FMLDedicatedServerSetupEvent) {
         Logger.log(Level.INFO, "Server starting...")
+    }
+
+    private fun serverStarting(event: ServerStartingEvent) {
+        CommandRegistry.register(event.server.commands.dispatcher)
     }
 }
