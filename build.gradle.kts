@@ -1,221 +1,154 @@
-import net.minecraftforge.gradle.userdev.DependencyManagementExtension
-import net.minecraftforge.gradle.userdev.UserDevExtension
-import org.gradle.jvm.tasks.Jar
-
-buildscript {
-    val kotlinVersion: String by project
-    
-    repositories {
-        maven( url = "https://maven.minecraftforge.net" )
-        mavenCentral()
-    }
-    dependencies {
-        classpath(group = "net.minecraftforge.gradle", name = "ForgeGradle", version = "5.1.+") {
-            isChanging = true
-        }
-
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-        // OPTIONAL Gradle plugin for Kotlin Serialization
-        classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
-    }
-}
-
-val modBaseName: String by project
-val kotlinVersion: String by project
-val minecraftVersion: String by project
-val mcpChannel: String by project
-val mcpMappings: String by project
-
-// Dependencies
-val jeiVersion: String by project
-val mekanismVersion: String by project
-val aeVersion: String by project
-val rsVersion: String by project
-val cctVersion: String by project
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
-    kotlin("jvm") version "1.6.21"
     java
+    idea
+    `maven-publish`
+    id("net.neoforged.moddev") version "1.0.11"
+    id("org.jetbrains.kotlin.jvm") version "2.0.0"
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
 }
-apply {
-    plugin("net.minecraftforge.gradle")
-    plugin("kotlinx-serialization")
+
+version = project.extra["mod_version"]!!
+group = project.extra["mod_group_id"]!!
+base.archivesName.set(project.extra["mod_id"]!!.toString())
+
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
-apply(from = "https://raw.githubusercontent.com/thedarkcolour/KotlinForForge/site/thedarkcolour/kotlinforforge/gradle/kff-3.1.0.gradle")
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_21)
+    }
+}
 
-project.group = "com.the9grounds.wirelesslogistics"
-base.archivesBaseName = "WirelessLogistics-${minecraftVersion}"
+neoForge {
+    version = project.extra["neo_version"]!!.toString()
+    accessTransformers {
+        file("src/main/resources/META-INF/accesstransformer.cfg")
+    }
 
-configure<UserDevExtension> {
-    mappings(mcpChannel, mcpMappings)
-
-    accessTransformer(file("src/main/resources/META-INF/accesstransformer.cfg"))
+    parchment {
+        mappingsVersion = project.extra["parchment_mappings_version"]!!.toString()
+        minecraftVersion = project.extra["parchment_minecraft_version"]!!.toString()
+    }
 
     runs {
+        configureEach {
+            systemProperty("forge.logging.markers", "REGISTRIES")
+            logLevel.set(org.slf4j.event.Level.DEBUG)
+        }
+
         create("client") {
-            workingDirectory(project.file("run"))
-
-            property("forge.logging.markers", "REGISTRIES")
-            property("forge.logging.console.level", "debug")
-
-            property("mixin.env.remapRefMap", "true")
-            property("mixin.env.refMapRemappingFile", "${projectDir}/build/createSrgToMcp/output.srg")
-
+            client()
+            systemProperty("neoforge.enabledGameTestNamespaces", project.extra["mod_id"]!!.toString())
         }
+
         create("server") {
-            workingDirectory(project.file("run"))
-
-            property("forge.logging.markers", "REGISTRIES")
-            property("forge.logging.console.level", "debug")
-            property("mixin.env.remapRefMap", "true")
-            property("mixin.env.refMapRemappingFile", "${projectDir}/build/createSrgToMcp/output.srg")
+            server()
+            programArgument("--nogui")
+            systemProperty("neoforge.enabledGameTestNamespaces", project.extra["mod_id"]!!.toString())
         }
+
+        create("gameTestServer") {
+            type.set("gameTestServer")
+            systemProperty("neoforge.enabledGameTestNamespaces", project.extra["mod_id"]!!.toString())
+        }
+
         create("data") {
-            workingDirectory(project.file("run"))
-
-            property("forge.logging.markers", "REGISTRIES")
-            property("forge.logging.console.level", "debug")
-            property("mixin.env.remapRefMap", "true")
-            property("mixin.env.refMapRemappingFile", "${projectDir}/build/createSrgToMcp/output.srg")
-
-            args("--mod", "wirelesslogistics", "--all", "--output", file("src/generated/resources/"), "--existing", file("src/main/resources"))
+            data()
+            programArguments.addAll(
+                listOf(
+                    "--mod", project.extra["mod_id"]!!.toString(),
+                    "--all",
+                    "--output", file("src/generated/resources/").absolutePath,
+                    "--existing", file("src/main/resources/").absolutePath
+                )
+            )
         }
     }
+
+    mods {
+        create(project.extra["mod_id"]!!.toString()) {
+            sourceSet(sourceSets["main"])
+        }
+    }
+}
+
+sourceSets["main"].resources.srcDir("src/generated/resources")
+
+configurations {
+    create("localRuntime")
+    getByName("runtimeClasspath").extendsFrom(getByName("localRuntime"))
 }
 
 repositories {
-    jcenter()
-    mavenCentral()
+    mavenLocal()
+    maven {
+        name = "Kotlin for Forge"
+        url = uri("https://thedarkcolour.github.io/KotlinForForge/")
+        content {
+            includeGroup("thedarkcolour")
+        }
+    }
 
     maven {
         name = "Modmaven"
         url = uri("https://modmaven.dev/")
     }
-
-    maven {
-        url = uri("https://www.cursemaven.com")
-        content {
-            includeGroup("curse.maven")
-        }
-    }
-    maven {
-        url = uri("https://maven.pkg.github.com/refinedmods/refinedstorage")
-        /* As of december 2021, GitHub packages requires authentication.
-           The password below is a personal access token that has read access to the Refined Mods repos.
-           It can be reused in other projects.
-           See: https://github.community/t/download-from-github-package-registry-without-authentication/14407/38 and
-                https://github.community/t/download-from-github-package-registry-without-authentication/14407/44
-         */
-        credentials {
-            username = "anything"
-            password = "\u0067hp_oGjcDFCn8jeTzIj4Ke9pLoEVtpnZMP4VQgaX"
-        }
-    }
-    maven {
-        url = uri("https://squiddev.cc/maven/")
-        content {
-            includeGroup("org.squiddev")
-        }
-    }
 }
 
 dependencies {
-    // Use the latest version of Minecraft Forge
-    "minecraft"("net.minecraftforge:forge:1.18.2-40.1.68")
+    implementation("thedarkcolour:kotlinforforge-neoforge:${project.extra["kotlinForForgeVersion"]}")
 
-    val jeiApi = project.dependencies.create(group = "mezz.jei", name = "jei-${minecraftVersion}", version = jeiVersion, classifier = "api")
-    val jei = project.dependencies.create(group = "mezz.jei", name = "jei-${minecraftVersion}", version = jeiVersion)
-    val ae2 = project.dependencies.create(group = "appeng", name = "appliedenergistics2", version = aeVersion)
-    val rs = project.dependencies.create(group = "com.refinedmods", name = "refinedstorage", version = rsVersion)
-    
-    rs.isTransitive = false
-
-    compileOnly(project.the<DependencyManagementExtension>().deobf(jeiApi))
-    runtimeOnly(project.the<DependencyManagementExtension>().deobf(jei))
-
-    implementation(project.the<DependencyManagementExtension>().deobf(ae2))
-
-    implementation(project.the<DependencyManagementExtension>().deobf("mekanism:Mekanism:${mekanismVersion}"))
-    implementation(project.the<DependencyManagementExtension>().deobf("curse.maven:the-one-probe-245211:3671753"))
-    implementation(project.the<DependencyManagementExtension>().deobf(rs)) 
-    implementation(project.the<DependencyManagementExtension>().deobf("org.squiddev:cc-tweaked-${minecraftVersion}:${cctVersion}"))
+    implementation("org.appliedenergistics:appliedenergistics2:${project.extra["ae2Version"]}")
 }
 
-val Project.minecraft: UserDevExtension
-    get() = extensions.getByName<UserDevExtension>("minecraft")
+tasks.withType<ProcessResources>().configureEach {
+    val replaceProperties = mapOf(
+        "minecraft_version" to project.extra["minecraft_version"]!!,
+        "minecraft_version_range" to project.extra["minecraft_version_range"]!!,
+        "neo_version" to project.extra["neo_version"]!!,
+        "neo_version_range" to project.extra["neo_version_range"]!!,
+        "loader_version_range" to project.extra["loader_version_range"]!!,
+        "mod_id" to project.extra["mod_id"]!!,
+        "mod_name" to project.extra["mod_name"]!!,
+        "mod_license" to project.extra["mod_license"]!!,
+        "mod_version" to project.extra["mod_version"]!!,
+        "mod_authors" to project.extra["mod_authors"]!!,
+        "mod_description" to project.extra["mod_description"]!!
+    )
 
-sourceSets {
-    main {
-        java {
-            srcDir("src")
-        }
-        resources {
-            srcDir("src/generated/resources")
-        }
+    inputs.properties(replaceProperties)
+
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(replaceProperties)
     }
 }
 
-tasks.withType<Jar> {
-    // this will ensure that this task is redone when the versions change.
-    inputs.property("version", getBetterVersion())
-    duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE
-
-    baseName = "${modBaseName}-${getBetterVersion()}"
-
-    // replace stuff in mcmod.info, nothing else
-    filesMatching("META-INF/mods.toml") {
-        expand(mapOf(
-            "version" to getBetterVersion(),
-            "mcversion" to "1.18.2"
-        ))
-        filter { line ->
-            line.replace("version=\"0.0.0.0.1\"", "version=\"${getBetterVersion()}\"")
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
+    repositories {
+        maven {
+            url = uri("file://${project.projectDir}/repo")
         }
     }
 }
 
-fun getBuildNumber(): String? {
-
-    if (System.getenv("CI") == null) {
-        return "0.0.0.1"
-    }
-
-    if (System.getenv("TAG") != null) {
-        return null
-    }
-
-    if (System.getenv("GITHUB_HEAD_REF") != null) {
-        return "0.0.1-pr-${System.getenv("GITHUB_HEAD_REF")}-${System.getenv("SHORT_SHA")}"
-    }
-
-    return "0.0.1-ci-${System.getenv("BRANCH_NAME")}-${System.getenv("SHORT_SHA")}"
+tasks.withType<JavaCompile>().configureEach {
+    options.encoding = "UTF-8"
 }
 
-fun getBetterVersion(): String {
-    val buildNumber = getBuildNumber()
-
-    if (buildNumber == null) {
-        val tag = System.getenv("TAG")
-
-        return "${tag}"
+idea {
+    module {
+        isDownloadSources = true
+        isDownloadJavadoc = true
     }
-
-    return "${minecraftVersion}-${buildNumber}"
-}
-
-fun getReleaseType(): String {
-    val preReleaseEnv = System.getenv("PRERELEASE")
-
-    if (preReleaseEnv == null) {
-        return "beta"
-    }
-
-    val preRelease = preReleaseEnv.toBoolean()
-
-    if (preRelease) {
-        return "beta"
-    }
-
-    return "release"
 }
