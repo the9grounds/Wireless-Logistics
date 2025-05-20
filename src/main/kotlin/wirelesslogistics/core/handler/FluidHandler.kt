@@ -1,6 +1,7 @@
 package wirelesslogistics.core.handler
 
 import net.minecraft.core.Direction
+import net.minecraft.world.level.material.Fluid
 import net.neoforged.neoforge.fluids.FluidStack
 import net.neoforged.neoforge.fluids.capability.IFluidHandler
 import wirelesslogistics.blockentity.NodeBlockEntity
@@ -42,7 +43,5 @@ class FluidHandler(side: Direction, blockEntity: NodeBlockEntity): AbstractHandl
         TODO("Not yet implemented")
     }
 
-    override fun drain(tank: Int, action: IFluidHandler.FluidAction): FluidStack {
-        TODO("Not yet implemented")
-    }
+    override fun drain(tank: Int, action: IFluidHandler.FluidAction): FluidStack = FluidStack()
 }
