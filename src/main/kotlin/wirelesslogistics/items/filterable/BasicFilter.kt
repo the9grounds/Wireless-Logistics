@@ -1,12 +1,14 @@
 package wirelesslogistics.items.filterable
 
-import net.minecraft.world.item.Item.Properties
 import wirelesslogistics.api.FilterableDirection
 import wirelesslogistics.api.WLGenericStack
 
-class AndFilterItem(props: Properties): FilterableItem(props) {
+// Basic filter for items, fluids, chemicals
+class BasicFilter(props: Properties): FilterableItem(props) {
     companion object {
         val SLOTS = 10
+
+//        fun getInventory()
     }
 
     override fun canAccept(stack: WLGenericStack?, direction: FilterableDirection): Boolean {

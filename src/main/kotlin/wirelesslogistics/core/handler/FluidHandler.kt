@@ -43,5 +43,7 @@ class FluidHandler(side: Direction, blockEntity: NodeBlockEntity): AbstractHandl
         TODO("Not yet implemented")
     }
 
-    override fun drain(tank: Int, action: IFluidHandler.FluidAction): FluidStack = FluidStack()
+    override fun drain(tank: Int, action: IFluidHandler.FluidAction): FluidStack {
+        TODO("Not yet implemented")
+    }
 }

@@ -65,6 +65,9 @@ class NodeBlockEntity(pos: BlockPos, blockState: BlockState) : BlockEntity(Block
                 item.value.onWorldChange()
             }
         }
+
+        // Cache connection types
+        // go tell all your connected entities to update their cache
     }
 
     fun isConnected(): Boolean {
