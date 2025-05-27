@@ -25,6 +25,7 @@ object CreativeTab {
             .displayItems { params, output ->
             output.accept(Items.DEV_CONNECT_ITEM.get())
             output.accept(Blocks.NODE.get())
+            output.accept(Items.REFERENCE_CARD.get())
         }.build()
     })
 

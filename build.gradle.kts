@@ -9,6 +9,7 @@ plugins {
     id("net.neoforged.moddev") version "1.0.11"
     id("org.jetbrains.kotlin.jvm") version "2.0.0"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.0"
+    id("com.google.devtools.ksp") version "2.0.0-1.0.24"
 }
 
 version = project.extra["mod_version"]!!
@@ -79,6 +80,33 @@ neoForge {
 }
 
 sourceSets["main"].resources.srcDir("src/generated/resources")
+sourceSets["main"].kotlin.srcDir("src/generated/ksp")
+
+val copyKspOutput by tasks.registering(Copy::class) {
+    from("build/generated/ksp/main/kotlin")
+    into("src/generated/ksp")
+}
+
+val removeOldKsp by tasks.registering(Delete::class) {
+    delete("build/generated/ksp/main/kotlin")
+}
+
+afterEvaluate {
+    tasks.named("kspKotlin") {
+        finalizedBy(copyKspOutput)
+    }
+    tasks.named("copyKspOutput") {
+        finalizedBy(removeOldKsp)
+    }
+    tasks.named("compileKotlin") {
+        dependsOn(removeOldKsp)
+    }
+
+//    tasks.named("compileKotlin") {
+//        dependsOn("copyKspOutput")
+//        inputs.dir("build/generated/ksp/main/kotlin")
+//    }
+}
 
 configurations {
     create("localRuntime")
@@ -87,6 +115,7 @@ configurations {
 
 repositories {
     mavenLocal()
+    mavenCentral()
     maven {
         name = "Kotlin for Forge"
         url = uri("https://thedarkcolour.github.io/KotlinForForge/")
@@ -103,6 +132,8 @@ repositories {
 
 dependencies {
     implementation("thedarkcolour:kotlinforforge-neoforge:${project.extra["kotlinForForgeVersion"]}")
+    implementation(project(":optionalinterop-processor")) // for @OptionalInterop annotation
+    ksp(project(":optionalinterop-processor"))
 
     implementation("org.appliedenergistics:appliedenergistics2:${project.extra["ae2Version"]}")
 }

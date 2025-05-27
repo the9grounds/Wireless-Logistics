@@ -11,6 +11,7 @@ import net.neoforged.neoforge.registries.DeferredRegister
 import java.util.function.Supplier
 
 import thedarkcolour.kotlinforforge.neoforge.forge.getValue
+import wirelesslogistics.items.ReferenceCardItem
 import wirelesslogistics.items.datacomponents.DevConnectItemData
 
 object Items {
@@ -20,6 +21,11 @@ object Items {
     val NODE = REGISTRY.registerItem(Ids.NODE.path, {props ->
         BlockItem(Blocks.NODE.get(), props)
     }, Item.Properties())
+
+    // Filters
+
+    // ReferenceCard
+    val REFERENCE_CARD = REGISTRY.registerItem(Ids.REFERENCE_CARD.path, ::ReferenceCardItem)
 
 //    val DEV_CONNECT_ITEM by createItem(Ids.DEV_CONNECT_ITEM) { properties -> DevConnectItem(properties) }
     

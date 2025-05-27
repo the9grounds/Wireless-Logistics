@@ -11,6 +11,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent
 import net.neoforged.fml.event.lifecycle.FMLDedicatedServerSetupEvent
 import net.neoforged.neoforge.capabilities.Capabilities
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent
+import net.neoforged.neoforge.client.event.RegisterNamedRenderTypesEvent
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.energy.IEnergyStorage
 import net.neoforged.neoforge.event.server.ServerStartingEvent
@@ -18,8 +19,10 @@ import net.neoforged.neoforge.items.IItemHandler
 import org.apache.logging.log4j.Level
 import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 import thedarkcolour.kotlinforforge.neoforge.forge.runForDist
+import wirelesslogistics.client.ClientEventHandler
 import wirelesslogistics.events.EventHandler
 import wirelesslogistics.registries.*
+import wirelesslogistics.registries.client.RenderTypes
 
 /**
  * Main mod class. Should be an `object` declaration annotated with `@Mod`.
@@ -47,6 +50,8 @@ object WirelessLogistics {
             clientTarget = {
                 MOD_BUS.addListener(WirelessLogistics::onClientSetup)
                 Minecraft.getInstance()
+                MOD_BUS.addListener(RenderTypes::register)
+                NeoForge.EVENT_BUS.register(ClientEventHandler)
             },
             serverTarget = {
                 MOD_BUS.addListener(WirelessLogistics::onServerSetup)
