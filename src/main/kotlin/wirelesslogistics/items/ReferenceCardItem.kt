@@ -53,18 +53,15 @@ class ReferenceCardItem(props: Properties): Item(props) {
         if (context.player?.isShiftKeyDown == true) {
             // Clear state
 
-            val data = stack.getOrDefault(DataComponents.REFERENCE_CARD_ITEM, ReferenceCardItemData())
+            val data = stack.get(DataComponents.REFERENCE_CARD_ITEM)
 
-            if (data.referencedBlockPos !== null) {
-                data.clear()
+            if (data?.referencedBlockPos !== null) {
 
-                stack.set(DataComponents.REFERENCE_CARD_ITEM, data)
-
-                context.player?.inventoryMenu?.broadcastChanges()
+                stack.remove(DataComponents.REFERENCE_CARD_ITEM)
 
                 context.player?.sendSystemMessage(Component.literal("Referenced Item Cleared"))
 
-                return InteractionResult.SUCCESS
+                return InteractionResult.CONSUME
             }
 
             return InteractionResult.PASS
@@ -84,7 +81,7 @@ class ReferenceCardItem(props: Properties): Item(props) {
 
         context.player?.sendSystemMessage(Component.literal("Referenced Item Bound"))
 
-        return InteractionResult.SUCCESS
+        return InteractionResult.CONSUME
     }
 
     fun hasBoundedBlock(stack: ItemStack): Boolean {
